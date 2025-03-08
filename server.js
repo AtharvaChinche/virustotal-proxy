@@ -4,12 +4,16 @@ const cors = require("cors");
 
 const app = express();
 app.use(express.json());
-app.use(cors()); // Allow CORS
+
+// ✅ Fix CORS: Allow Botpress requests
+app.use(cors({
+    origin: "*", // Allows all origins
+    methods: "GET, POST",
+    allowedHeaders: "Content-Type"
+}));
 
 const API_KEY = process.env.API_KEY; // ✅ Read from environment variable
-app.get("/", (req, res) => {
-    res.send("✅ VirusTotal API Proxy is running!");
-});
+
 app.post("/check-url", async (req, res) => {
     const url = req.body.url;
     
@@ -35,4 +39,4 @@ app.post("/check-url", async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
