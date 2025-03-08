@@ -1,3 +1,7 @@
+app.get("/", (req, res) => {
+    res.send("✅ VirusTotal API Proxy is running!");
+});
+
 const express = require("express");
 const fetch = require("node-fetch");
 const cors = require("cors");
