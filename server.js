@@ -1,24 +1,3 @@
-const express = require("express");
-const fetch = require("node-fetch");
-const cors = require("cors");
-
-const app = express(); // ✅ Fix: Initialize Express
-
-app.use(express.json());
-
-// ✅ Fix CORS issue
-app.use(cors({
-    origin: "*",
-    methods: "GET, POST",
-    allowedHeaders: "Content-Type"
-}));
-
-// ✅ Test Route for Browser
-app.get("/", (req, res) => {
-    res.send("✅ VirusTotal API Proxy is running!");
-});
-
-// ✅ VirusTotal API Proxy Route
 app.post("/check-url", async (req, res) => {
     const url = req.body.url;
 
@@ -40,7 +19,10 @@ app.post("/check-url", async (req, res) => {
         const data = await response.json();
         const analysisId = data.data.id;
 
-        // Step 2: Fetch the scan report
+        // ✅ Step 2: Wait 15 seconds before fetching the report (to allow VirusTotal to scan)
+        await new Promise(resolve => setTimeout(resolve, 15000)); // 15-second delay
+
+        // Step 3: Fetch the scan report
         const reportResponse = await fetch(`https://www.virustotal.com/api/v3/analyses/${analysisId}`, {
             method: "GET",
             headers: {
@@ -55,6 +37,3 @@ app.post("/check-url", async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
-
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
