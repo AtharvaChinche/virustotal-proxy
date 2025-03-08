@@ -6,7 +6,7 @@ const app = express();
 app.use(express.json());
 app.use(cors()); // Allow CORS
 
-const API_KEY = "df02032ba4027f7b37a5e598f63a8e18ad927c30089543bd15879e6477c5b833"; // 🔹 Replace with your actual API key
+const API_KEY = process.env.API_KEY; // ✅ Read from environment variable
 
 app.post("/check-url", async (req, res) => {
     const url = req.body.url;
@@ -19,7 +19,7 @@ app.post("/check-url", async (req, res) => {
         const response = await fetch("https://www.virustotal.com/api/v3/urls", {
             method: "POST",
             headers: {
-                "x-apikey": API_KEY,
+                "x-apikey": API_KEY, // ✅ Use the secure API Key
                 "Content-Type": "application/x-www-form-urlencoded"
             },
             body: `url=${encodeURIComponent(url)}`
