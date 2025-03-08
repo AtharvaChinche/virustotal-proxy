@@ -32,4 +32,34 @@ app.post("/check-url", async (req, res) => {
         const response = await fetch("https://www.virustotal.com/api/v3/urls", {
             method: "POST",
             headers: {
-                "
+                "x-apikey": process.env.API_KEY,
+                "Content-Type": "application/x-www-form-urlencoded"
+            },
+            body: `url=${encodeURIComponent(url)}`
+        });
+
+        const data = await response.json();
+        const analysisId = data.data.id;
+
+        // ✅ Step 2: Wait 15 seconds before fetching the report (to allow VirusTotal to scan)
+        await new Promise(resolve => setTimeout(resolve, 15000)); // 15-second delay
+
+        // Step 3: Fetch the scan report
+        const reportResponse = await fetch(`https://www.virustotal.com/api/v3/analyses/${analysisId}`, {
+            method: "GET",
+            headers: {
+                "x-apikey": process.env.API_KEY
+            }
+        });
+
+        const reportData = await reportResponse.json();
+        res.json(reportData);
+
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// ✅ Fix: Ensure Express app listens at the end
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
