@@ -1,7 +1,3 @@
-app.get("/", (req, res) => {
-    res.send("✅ VirusTotal API Proxy is running!");
-});
-
 const express = require("express");
 const fetch = require("node-fetch");
 const cors = require("cors");
@@ -11,7 +7,9 @@ app.use(express.json());
 app.use(cors()); // Allow CORS
 
 const API_KEY = process.env.API_KEY; // ✅ Read from environment variable
-
+app.get("/", (req, res) => {
+    res.send("✅ VirusTotal API Proxy is running!");
+});
 app.post("/check-url", async (req, res) => {
     const url = req.body.url;
     
