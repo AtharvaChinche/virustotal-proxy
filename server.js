@@ -13,6 +13,9 @@ app.use(cors({
 }));
 
 const API_KEY = process.env.API_KEY; // ✅ Read from environment variable
+app.get("/", (req, res) => {
+    res.send("✅ VirusTotal API Proxy is running!");
+});
 
 app.post("/check-url", async (req, res) => {
     const url = req.body.url;
