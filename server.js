@@ -1,7 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const fetch = require("node-fetch");
-const { JSDOM } = require("jsdom"); // ✅ To extract website content
+const puppeteer = require("puppeteer"); // ✅ Use Puppeteer for better scraping
 require("dotenv").config();
 
 const app = express();
@@ -20,18 +20,19 @@ function isValidURL(string) {
     }
 }
 
-// ✅ Function to fetch final redirected URL & page contents
+// ✅ Function to fetch final redirected URL & page contents using Puppeteer
 async function getWebsiteInfo(url) {
+    console.log("🌍 Fetching website info for:", url);
     try {
-        const response = await fetch(url, { redirect: "follow" }); // ✅ Follow Redirects
-        const finalURL = response.url; // ✅ Get final destination URL
-        const html = await response.text(); // ✅ Get page HTML
+        const browser = await puppeteer.launch({ headless: "new" });
+        const page = await browser.newPage();
+        await page.goto(url, { waitUntil: "domcontentloaded", timeout: 20000 });
 
-        // ✅ Extract Title & Meta Description
-        const dom = new JSDOM(html);
-        const title = dom.window.document.querySelector("title")?.textContent || "No title found";
-        const description = dom.window.document.querySelector("meta[name='description']")?.content || "No description found";
+        const finalURL = page.url(); // ✅ Get final redirected URL
+        const title = await page.title(); // ✅ Get page title
+        const description = await page.$eval("meta[name='description']", el => el.content).catch(() => "No description found");
 
+        await browser.close();
         return { finalURL, title, description };
     } catch (error) {
         console.error("❌ Error fetching website info:", error.message);
@@ -105,4 +106,4 @@ app.post("/check-url", async (req, res) => {
 });
 
 const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => console.log(`✅ Google Safe Browsing API with Redirect Analysis running on port ${PORT}`));
+app.listen(PORT, () => console.log(`✅ Google Safe Browsing API with Puppeteer running on port ${PORT}`));
