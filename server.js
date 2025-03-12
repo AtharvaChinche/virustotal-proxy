@@ -1,12 +1,13 @@
-const puppeteer = require("puppeteer");
+const puppeteer = require("puppeteer-core");
 
 async function getWebsiteInfo(url) {
     console.log("🌍 Fetching website info for:", url);
     try {
         const browser = await puppeteer.launch({
-            headless: "new",
-            args: ["--no-sandbox", "--disable-setuid-sandbox"] // ✅ Prevents Render memory issues
+            executablePath: "/usr/bin/google-chrome-stable", // ✅ Use system Chrome
+            args: ["--no-sandbox", "--disable-setuid-sandbox"] 
         });
+
         const page = await browser.newPage();
         await page.goto(url, { waitUntil: "domcontentloaded", timeout: 20000 });
 
