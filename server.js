@@ -6,6 +6,9 @@ require("dotenv").config();
 const app = express();
 app.use(express.json());
 app.use(cors());
+app.get("/", (req, res) => {
+    res.send("✅ VirusTotal API Proxy is running!");
+});
 
 const VIRUSTOTAL_API_KEY = process.env.API_KEY; // ✅ Make sure this is set
 
