@@ -9,6 +9,16 @@ app.use(cors());
 
 const GOOGLE_API_KEY = process.env.API_KEY; // ✅ Ensure this is set
 
+// ✅ Function to check if the input is a valid URL
+function isValidURL(string) {
+    try {
+        new URL(string);
+        return true;
+    } catch (_) {
+        return false;
+    }
+}
+
 // ✅ Default route to check if the API is running
 app.get("/", (req, res) => {
     res.send("✅ Google Safe Browsing API Proxy is running!");
@@ -17,8 +27,9 @@ app.get("/", (req, res) => {
 app.post("/check-url", async (req, res) => {
     const { url } = req.body;
 
-    if (!url) {
-        return res.status(400).json({ error: "Missing URL in request body" });
+    // ✅ Step 1: Check if the URL is valid
+    if (!url || !isValidURL(url)) {
+        return res.status(400).json({ error: "❌ Invalid URL. Please enter a valid website link." });
     }
 
     try {
@@ -28,10 +39,10 @@ app.post("/check-url", async (req, res) => {
             client: { clientId: "yourcompany", clientVersion: "1.0" },
             threatInfo: {
                 threatTypes: [
-                    "MALWARE", 
-                    "SOCIAL_ENGINEERING", 
-                    "UNWANTED_SOFTWARE", 
-                    "POTENTIALLY_HARMFUL_APPLICATION" // ✅ Added more threat types
+                    "MALWARE",
+                    "SOCIAL_ENGINEERING",
+                    "UNWANTED_SOFTWARE",
+                    "POTENTIALLY_HARMFUL_APPLICATION"
                 ],
                 platformTypes: ["ANY_PLATFORM"],
                 threatEntryTypes: ["URL"],
@@ -49,7 +60,6 @@ app.post("/check-url", async (req, res) => {
         console.log("🔍 Google Safe Browsing Response:", JSON.stringify(data, null, 2));
 
         if (data && data.matches && data.matches.length > 0) {
-            // ✅ Return detailed threat results
             res.json({
                 safe: false,
                 threats: data.matches.map(match => ({
