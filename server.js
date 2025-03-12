@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const fetch = require("node-fetch");
+const { JSDOM } = require("jsdom"); // ✅ To extract website content
 require("dotenv").config();
 
 const app = express();
@@ -19,9 +20,28 @@ function isValidURL(string) {
     }
 }
 
+// ✅ Function to fetch final redirected URL & page contents
+async function getWebsiteInfo(url) {
+    try {
+        const response = await fetch(url, { redirect: "follow" }); // ✅ Follow Redirects
+        const finalURL = response.url; // ✅ Get final destination URL
+        const html = await response.text(); // ✅ Get page HTML
+
+        // ✅ Extract Title & Meta Description
+        const dom = new JSDOM(html);
+        const title = dom.window.document.querySelector("title")?.textContent || "No title found";
+        const description = dom.window.document.querySelector("meta[name='description']")?.content || "No description found";
+
+        return { finalURL, title, description };
+    } catch (error) {
+        console.error("❌ Error fetching website info:", error.message);
+        return { finalURL: url, title: "Error fetching site", description: "Error fetching details" };
+    }
+}
+
 // ✅ Default route to check if the API is running
 app.get("/", (req, res) => {
-    res.send("✅ Google Safe Browsing API Proxy is running!");
+    res.send("✅ Google Safe Browsing API Proxy with Redirect & Content Analysis is running!");
 });
 
 app.post("/check-url", async (req, res) => {
@@ -38,12 +58,7 @@ app.post("/check-url", async (req, res) => {
         const requestBody = {
             client: { clientId: "yourcompany", clientVersion: "1.0" },
             threatInfo: {
-                threatTypes: [
-                    "MALWARE",
-                    "SOCIAL_ENGINEERING",
-                    "UNWANTED_SOFTWARE",
-                    "POTENTIALLY_HARMFUL_APPLICATION"
-                ],
+                threatTypes: ["MALWARE", "SOCIAL_ENGINEERING", "UNWANTED_SOFTWARE", "POTENTIALLY_HARMFUL_APPLICATION"],
                 platformTypes: ["ANY_PLATFORM"],
                 threatEntryTypes: ["URL"],
                 threatEntries: [{ url }]
@@ -59,18 +74,30 @@ app.post("/check-url", async (req, res) => {
         const data = await response.json();
         console.log("🔍 Google Safe Browsing Response:", JSON.stringify(data, null, 2));
 
+        // ✅ Step 2: Fetch Redirects & Website Content
+        const websiteInfo = await getWebsiteInfo(url);
+
+        let result = {
+            originalURL: url,
+            finalURL: websiteInfo.finalURL,
+            title: websiteInfo.title,
+            description: websiteInfo.description
+        };
+
+        // ✅ Step 3: Return Safe or Threat Info
         if (data && data.matches && data.matches.length > 0) {
-            res.json({
-                safe: false,
-                threats: data.matches.map(match => ({
-                    type: match.threatType,
-                    platform: match.platformType,
-                    url: match.threat.url
-                }))
-            });
+            result.safe = false;
+            result.threats = data.matches.map(match => ({
+                type: match.threatType,
+                platform: match.platformType,
+                url: match.threat.url
+            }));
         } else {
-            res.json({ safe: true, message: "✅ No threats found!" });
+            result.safe = true;
+            result.message = "✅ No threats found!";
         }
+
+        res.json(result);
     } catch (error) {
         console.error("❌ Google Safe Browsing API Error:", error.message);
         res.status(500).json({ error: error.message });
@@ -78,4 +105,4 @@ app.post("/check-url", async (req, res) => {
 });
 
 const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => console.log(`✅ Google Safe Browsing API Proxy running on port ${PORT}`));
+app.listen(PORT, () => console.log(`✅ Google Safe Browsing API with Redirect Analysis running on port ${PORT}`));
