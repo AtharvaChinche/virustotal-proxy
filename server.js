@@ -1,7 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const fetch = require("node-fetch");
-const puppeteer = require("puppeteer"); // ✅ Use Puppeteer to get full page content
+const { JSDOM } = require("jsdom"); // ✅ Extract website details
 require("dotenv").config();
 
 const app = express();
@@ -21,28 +21,34 @@ function isValidURL(string) {
     }
 }
 
-// ✅ Function to fetch full page content using Puppeteer
+// ✅ Function to get website details & create a summary
 async function getWebsiteSummary(url) {
-    console.log("🌍 Fetching website info for:", url);
     try {
-        const browser = await puppeteer.launch({
-            headless: "new",
-            args: ["--no-sandbox", "--disable-setuid-sandbox"] // ✅ Fixes Render issues
-        });
+        const response = await fetch(url, { redirect: "follow" });
+        const finalURL = response.url;
+        const html = await response.text();
 
-        const page = await browser.newPage();
-        await page.goto(url, { waitUntil: "domcontentloaded", timeout: 30000 });
+        // ✅ Extract Title & Meta Description
+        const dom = new JSDOM(html);
+        const title = dom.window.document.querySelector("title")?.textContent || "No title found";
+        const description = dom.window.document.querySelector("meta[name='description']")?.content || "No description available.";
 
-        const finalURL = page.url();
-        const title = await page.title();
-        const description = await page.$eval("meta[name='description']", el => el.content).catch(() => "No description found");
+        // ✅ Generate a short summary based on the website type
+        let summary = `The website **${title}** (${finalURL}) appears to be about: ${description}`;
 
-        await browser.close();
+        // ✅ Add Risk Analysis
+        if (title.toLowerCase().includes("torrent") || finalURL.includes("piratebay")) {
+            summary += `\n\n⚠️ **Potential Risks:**\n- Torrent sites often distribute copyrighted content.\n- Some proxies may contain ads, trackers, or malware.\n- Accessing such sites might be restricted in some countries.`;
+        } else if (title.toLowerCase().includes("bank") || description.toLowerCase().includes("login")) {
+            summary += `\n\n⚠️ **Potential Risks:**\n- Be cautious of phishing attempts.\n- Do not enter personal information unless you verify it's an official site.`;
+        }
 
-        return { finalURL, title, description };
+        // ✅ Add Safety Measures
+        summary += `\n\n🛡️ **Safety Measures:**\n- Always verify the URL before entering sensitive information.\n- Use a VPN for privacy on torrent or proxy sites.\n- Check the website in VirusTotal before visiting.`;
+
+        return { finalURL, title, description, summary };
     } catch (error) {
-        console.error("❌ Error fetching website info:", error.message);
-        return { finalURL: url, title: "Error fetching site", description: "Error fetching details" };
+        return { finalURL: url, title: "Error fetching site", description: "Could not analyze website", summary: "⚠️ Unable to retrieve website details." };
     }
 }
 
@@ -76,14 +82,15 @@ app.post("/check-url", async (req, res) => {
 
         const data = await response.json();
 
-        // ✅ Step 2: Get Website Summary (Now Uses Puppeteer)
+        // ✅ Step 2: Get Website Summary
         const websiteInfo = await getWebsiteSummary(url);
 
         let result = {
             originalURL: url,
             finalURL: websiteInfo.finalURL,
             title: websiteInfo.title,
-            description: websiteInfo.description
+            description: websiteInfo.description,
+            summary: websiteInfo.summary
         };
 
         // ✅ Step 3: Return Safe or Threat Info
@@ -96,7 +103,7 @@ app.post("/check-url", async (req, res) => {
             }));
         } else {
             result.safe = true;
-            result.message = "✅ No threats found!";
+            result.message = "✅ No direct threats found!";
         }
 
         res.json(result);
