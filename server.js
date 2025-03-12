@@ -9,6 +9,11 @@ app.use(cors());
 
 const GOOGLE_API_KEY = process.env.API_KEY; // ✅ Ensure this is set
 
+// ✅ Fix: Add a default route to check if the API is running
+app.get("/", (req, res) => {
+    res.send("✅ Google Safe Browsing API Proxy is running!");
+});
+
 app.post("/check-url", async (req, res) => {
     const { url } = req.body;
 
