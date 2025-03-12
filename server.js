@@ -1,24 +1,19 @@
-const puppeteer = require("puppeteer-core");
+const express = require("express");
+const cors = require("cors");
+const fetch = require("node-fetch");
+require("dotenv").config();
 
-async function getWebsiteInfo(url) {
-    console.log("🌍 Fetching website info for:", url);
-    try {
-        const browser = await puppeteer.launch({
-            executablePath: "/usr/bin/google-chrome-stable", // ✅ Use system Chrome
-            args: ["--no-sandbox", "--disable-setuid-sandbox"] 
-        });
+const app = express();
+app.use(express.json());
+app.use(cors());
 
-        const page = await browser.newPage();
-        await page.goto(url, { waitUntil: "domcontentloaded", timeout: 20000 });
+const PORT = process.env.PORT || 10000; // ✅ Use Render's assigned port
 
-        const finalURL = page.url();
-        const title = await page.title();
-        const description = await page.$eval("meta[name='description']", el => el.content).catch(() => "No description found");
+// ✅ Default route to check if the API is running
+app.get("/", (req, res) => {
+    res.send("✅ Google Safe Browsing API is running!");
+});
 
-        await browser.close();
-        return { finalURL, title, description };
-    } catch (error) {
-        console.error("❌ Error fetching website info:", error.message);
-        return { finalURL: url, title: "Error fetching site", description: "Error fetching details" };
-    }
-}
+app.listen(PORT, () => {
+    console.log(`✅ Server running on port ${PORT}`);
+});
