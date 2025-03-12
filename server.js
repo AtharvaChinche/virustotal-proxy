@@ -1,7 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const fetch = require("node-fetch");
-const puppeteer = require("puppeteer"); // ✅ Extracts website details (even if blocked)
+const puppeteer = require("puppeteer-core");
 require("dotenv").config();
 
 const app = express();
@@ -26,10 +26,11 @@ function isValidURL(string) {
 async function getWebsiteSummary(url) {
     console.log("🌍 Fetching website info for:", url);
     try {
-        const browser = await puppeteer.launch({
-            headless: "new",
-            args: ["--no-sandbox", "--disable-setuid-sandbox"] // ✅ Fixes Render issues
-        });
+const browser = await puppeteer.launch({
+    executablePath: "/usr/bin/google-chrome-stable", // ✅ Use system Chrome
+    args: ["--no-sandbox", "--disable-setuid-sandbox"]
+});
+
 
         const page = await browser.newPage();
         await page.goto(url, { waitUntil: "domcontentloaded", timeout: 30000 });
