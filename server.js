@@ -9,7 +9,7 @@ app.use(cors());
 
 const GOOGLE_API_KEY = process.env.API_KEY; // ✅ Ensure this is set
 
-// ✅ Fix: Add a default route to check if the API is running
+// ✅ Default route to check if the API is running
 app.get("/", (req, res) => {
     res.send("✅ Google Safe Browsing API Proxy is running!");
 });
@@ -27,7 +27,12 @@ app.post("/check-url", async (req, res) => {
         const requestBody = {
             client: { clientId: "yourcompany", clientVersion: "1.0" },
             threatInfo: {
-                threatTypes: ["MALWARE", "SOCIAL_ENGINEERING"],
+                threatTypes: [
+                    "MALWARE", 
+                    "SOCIAL_ENGINEERING", 
+                    "UNWANTED_SOFTWARE", 
+                    "POTENTIALLY_HARMFUL_APPLICATION" // ✅ Added more threat types
+                ],
                 platformTypes: ["ANY_PLATFORM"],
                 threatEntryTypes: ["URL"],
                 threatEntries: [{ url }]
@@ -44,7 +49,15 @@ app.post("/check-url", async (req, res) => {
         console.log("🔍 Google Safe Browsing Response:", JSON.stringify(data, null, 2));
 
         if (data && data.matches && data.matches.length > 0) {
-            res.json({ safe: false, threats: data.matches });
+            // ✅ Return detailed threat results
+            res.json({
+                safe: false,
+                threats: data.matches.map(match => ({
+                    type: match.threatType,
+                    platform: match.platformType,
+                    url: match.threat.url
+                }))
+            });
         } else {
             res.json({ safe: true, message: "✅ No threats found!" });
         }
